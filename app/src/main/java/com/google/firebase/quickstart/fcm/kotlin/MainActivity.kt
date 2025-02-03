@@ -15,56 +15,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.Firebase
 import com.google.firebase.messaging.messaging
 import com.google.firebase.quickstart.fcm.R
 import com.google.firebase.quickstart.fcm.databinding.ActivityMainBinding
 import com.bumptech.glide.Glide
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.POST
+
 import java.util.UUID
 
-// Data classes for API
-data class AppData(
-    val phone_id: String,
-    val fcm_token: String,
-    val lat: Double,
-    val lon: Double
-)
-
-// API interface
-interface ApiService {
-    @POST("/test/app-data")
-    fun sendAppData(@Body data: AppData): Call<Unit>
-}
 
 class MainActivity : AppCompatActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private val retrofit = Retrofit.Builder()
-        .baseUrl("https://bmorlmhe80.execute-api.us-east-2.amazonaws.com")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-    private val apiService = retrofit.create(ApiService::class.java)
-
-    // Get or generate a unique device ID
-    private fun getDeviceUniqueId(): String {
-        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        val existingId = prefs.getString("device_id", null)
-
-        return if (existingId != null) {
-            existingId
-        } else {
-            val newId = UUID.randomUUID().toString()
-            prefs.edit().putString("device_id", newId).apply()
-            newId
-        }
-    }
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -159,49 +120,25 @@ class MainActivity : AppCompatActivity() {
             fusedLocationClient.lastLocation
                 .addOnSuccessListener { location: Location? ->
                     location?.let {
-                        // Get FCM token and send data
-                        Firebase.messaging.token.addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                val token = task.result
-                                val deviceId = getDeviceUniqueId()
-                                
-                                val appData = AppData(
-                                    phone_id = deviceId,
-                                    fcm_token = token,
-                                    lat = location.latitude,
-                                    lon = location.longitude
-                                )
-
-                                // Send data to API
-                                apiService.sendAppData(appData).enqueue(object : Callback<Unit> {
-                                    override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
-                                        if (response.isSuccessful) {
-                                            Toast.makeText(this@MainActivity, 
-                                                "Location and token sent successfully", 
-                                                Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(this@MainActivity, 
-                                                "Failed to send data: ${response.code()}",
-                                                Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-
-                                    override fun onFailure(call: Call<Unit>, t: Throwable) {
-                                        Toast.makeText(this@MainActivity, 
-                                            "Error sending data: ${t.message}", 
-                                            Toast.LENGTH_SHORT).show()
-                                        Log.e(TAG, "API call failed", t)
-                                    }
-                                })
-                            } else {
-                                Toast.makeText(this@MainActivity, 
-                                    "Error getting FCM token", 
-                                    Toast.LENGTH_SHORT).show()
-                            }
+                        getTokenAndSendData(location.latitude, location.longitude, {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Location and token sent successfully",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        { errorMessage ->
+                            Toast.makeText(
+                                this@MainActivity,
+                                errorMessage,
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
-                    } ?: run {
-                        Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show()
+                        )
                     }
+                } ?: run {
+                    Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show()
+                }
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Error getting location: ${e.message}", Toast.LENGTH_SHORT).show()
