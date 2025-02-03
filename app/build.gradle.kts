@@ -57,6 +57,10 @@ dependencies {
     implementation("androidx.vectordrawable:vectordrawable-animated:1.2.0")
     implementation("androidx.core:core-ktx:1.13.1")
 
+    // Glide for image and GIF loading
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
     // Required when asking for permission to post notifications (starting in Android 13)
     implementation("androidx.activity:activity-ktx:1.10.0")
     implementation("androidx.fragment:fragment-ktx:1.8.5")

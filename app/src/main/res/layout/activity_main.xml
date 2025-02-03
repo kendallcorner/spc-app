@@ -10,26 +10,20 @@
     tools:context="com.google.firebase.quickstart.fcm.java.MainActivity">
 
     <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/spcActivityLoop"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginBottom="16dp"
-        android:layout_gravity="center_horizontal"
-        android:src="@drawable/firebase_lockup_400" />
-
-    <TextView
-        android:id="@+id/informationTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:gravity="center_horizontal"
-        android:text="@string/quickstart_message" />
+        android:scaleType="fitCenter"
+        android:contentDescription="SPC Activity Loop" />
 
     <Button
         android:id="@+id/subscribeButton"
         android:layout_width="@dimen/standard_field_width"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="8dp"
         android:text="@string/subscribe_to_weather" />
 
     <Button

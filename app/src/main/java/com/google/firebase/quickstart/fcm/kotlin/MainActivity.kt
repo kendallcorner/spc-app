@@ -16,6 +16,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.messaging.messaging
 import com.google.firebase.quickstart.fcm.R
 import com.google.firebase.quickstart.fcm.databinding.ActivityMainBinding
+import com.bumptech.glide.Glide
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,6 +39,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Load the SPC activity loop GIF
+        Glide.with(this)
+            .asGif()
+            .load("https://www.spc.noaa.gov/products/activity_loop.gif")
+            .into(binding.spcActivityLoop)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // Create channel to show notifications.
@@ -69,21 +76,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
         // [END handle_data_extras]
-
-        binding.subscribeButton.setOnClickListener {
-            Log.d(TAG, "Subscribing to weather topic")
-            // [START subscribe_topics]
-            Firebase.messaging.subscribeToTopic("weather")
-                .addOnCompleteListener { task ->
-                    var msg = getString(R.string.msg_subscribed)
-                    if (!task.isSuccessful) {
-                        msg = getString(R.string.msg_subscribe_failed)
-                    }
-                    Log.d(TAG, msg)
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                }
-            // [END subscribe_topics]
-        }
 
         binding.logTokenButton.setOnClickListener {
             // Get token
