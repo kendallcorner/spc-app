@@ -3,7 +3,9 @@ package com.google.firebase.quickstart.fcm.kotlin
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -11,26 +13,84 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.Firebase
 import com.google.firebase.messaging.messaging
 import com.google.firebase.quickstart.fcm.R
 import com.google.firebase.quickstart.fcm.databinding.ActivityMainBinding
 import com.bumptech.glide.Glide
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.POST
+import java.util.UUID
+
+// Data classes for API
+data class AppData(
+    val phone_id: String,
+    val fcm_token: String,
+    val lat: Double,
+    val lon: Double
+)
+
+// API interface
+interface ApiService {
+    @POST("/test/app-data")
+    fun sendAppData(@Body data: AppData): Call<Unit>
+}
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://bmorlmhe80.execute-api.us-east-2.amazonaws.com")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+    private val apiService = retrofit.create(ApiService::class.java)
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { isGranted: Boolean ->
+    // Get or generate a unique device ID
+    private fun getDeviceUniqueId(): String {
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val existingId = prefs.getString("device_id", null)
+
+        return if (existingId != null) {
+            existingId
+        } else {
+            val newId = UUID.randomUUID().toString()
+            prefs.edit().putString("device_id", newId).apply()
+            newId
+        }
+    }
+
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        when {
+            permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true -> {
+                // Location permission granted
+                getLocationAndSendData()
+            }
+            else -> {
+                Toast.makeText(this, "Location permission is required", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
         if (isGranted) {
-            Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT)
-                .show()
+            Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(
                 this,
-                "FCM can't post notifications without POST_NOTIFICATIONS permission",
-                Toast.LENGTH_LONG,
+                "FCM can't post notifications without permission",
+                Toast.LENGTH_LONG
             ).show()
         }
     }
@@ -39,6 +99,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         // Load the SPC activity loop GIF
         Glide.with(this)
@@ -60,65 +122,110 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // If a notification message is tapped, any data accompanying the notification
-        // message is available in the intent extras. In this sample the launcher
-        // intent is fired when the notification is tapped, so any accompanying data would
-        // be handled here. If you want a different intent fired, set the click_action
-        // field of the notification message to the desired intent. The launcher intent
-        // is used when no click_action is specified.
-        //
-        // Handle possible data accompanying notification message.
-        // [START handle_data_extras]
-        intent.extras?.let {
-            for (key in it.keySet()) {
-                val value = intent.extras?.getString(key)
-                Log.d(TAG, "Key: $key Value: $value")
-            }
-        }
-        // [END handle_data_extras]
-
-        binding.logTokenButton.setOnClickListener {
-            // Get token
-            // [START log_reg_token]
-            Firebase.messaging.token.addOnCompleteListener(
-                OnCompleteListener { task ->
-                    if (!task.isSuccessful) {
-                        Log.w(TAG, "Fetching FCM registration token failed", task.exception)
-                        return@OnCompleteListener
-                    }
-
-                    // Get new FCM registration token
-                    val token = task.result
-
-                    // Log and toast
-                    val msg = getString(R.string.msg_token_fmt, token)
-                    Log.d(TAG, msg)
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                },
-            )
-            // [END log_reg_token]
+        binding.gpsUpdateButton.setOnClickListener {
+            checkLocationPermission()
         }
 
-        Toast.makeText(this, "See README for setup instructions", Toast.LENGTH_SHORT).show()
         askNotificationPermission()
     }
 
+    private fun checkLocationPermission() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                // Permission is granted, get location
+                getLocationAndSendData()
+            }
+            else -> {
+                // Request permission
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+        }
+    }
+
+    private fun getLocationAndSendData() {
+        try {
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    location?.let {
+                        // Get FCM token and send data
+                        Firebase.messaging.token.addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                val token = task.result
+                                val deviceId = getDeviceUniqueId()
+                                
+                                val appData = AppData(
+                                    phone_id = deviceId,
+                                    fcm_token = token,
+                                    lat = location.latitude,
+                                    lon = location.longitude
+                                )
+
+                                // Send data to API
+                                apiService.sendAppData(appData).enqueue(object : Callback<Unit> {
+                                    override fun onResponse(call: Call<Unit>, response: Response<Unit>) {
+                                        if (response.isSuccessful) {
+                                            Toast.makeText(this@MainActivity, 
+                                                "Location and token sent successfully", 
+                                                Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(this@MainActivity, 
+                                                "Failed to send data: ${response.code()}",
+                                                Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+
+                                    override fun onFailure(call: Call<Unit>, t: Throwable) {
+                                        Toast.makeText(this@MainActivity, 
+                                            "Error sending data: ${t.message}", 
+                                            Toast.LENGTH_SHORT).show()
+                                        Log.e(TAG, "API call failed", t)
+                                    }
+                                })
+                            } else {
+                                Toast.makeText(this@MainActivity, 
+                                    "Error getting FCM token", 
+                                    Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } ?: run {
+                        Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this, "Error getting location: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "Error getting location", e)
+                }
+        } catch (e: SecurityException) {
+            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
+            Log.e(TAG, "Security exception: ${e.message}")
+        }
+    }
+
     private fun askNotificationPermission() {
-        // This is only necessary for API Level > 33 (TIRAMISU)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
             ) {
                 // FCM SDK (and your app) can post notifications.
             } else {
-                // Directly ask for the permission
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
 
     companion object {
-
         private const val TAG = "MainActivity"
     }
 }

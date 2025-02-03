@@ -61,7 +61,7 @@ public class MainActivityEspressoTest {
         Thread.sleep(2000);
 
         // Click log token and check toast
-        onView(allOf(withId(R.id.logTokenButton), withText(R.string.log_token)))
+        onView(allOf(withId(R.id.gpsUpdateButton), withText(R.string.log_token)))
                 .check(matches(isDisplayed()))
                 .perform(click());
         confirmToastStartsWith(mActivityRule.getActivity().getString(R.string.msg_token_fmt, ""));

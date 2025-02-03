@@ -57,6 +57,14 @@ dependencies {
     implementation("androidx.vectordrawable:vectordrawable-animated:1.2.0")
     implementation("androidx.core:core-ktx:1.13.1")
 
+    // Retrofit for API calls
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // Location services
+    implementation("com.google.android.gms:play-services-location:21.2.0")
+
     // Glide for image and GIF loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
