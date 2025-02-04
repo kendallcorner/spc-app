@@ -3,11 +3,12 @@ package com.google.firebase.quickstart.fcm.kotlin
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,17 +16,32 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.Firebase
-import com.google.firebase.messaging.messaging
 import com.google.firebase.quickstart.fcm.R
 import com.google.firebase.quickstart.fcm.databinding.ActivityMainBinding
 import com.bumptech.glide.Glide
-
-import java.util.UUID
-
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 
 class MainActivity : AppCompatActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var binding: ActivityMainBinding
+    private val handler = Handler(Looper.getMainLooper())
+    private val refreshInterval = 60000L // 1 minute in milliseconds
+
+    private val refreshRunnable = object : Runnable {
+        override fun run() {
+            loadGif()
+            handler.postDelayed(this, refreshInterval)
+        }
+    }
+
+    private fun loadGif() {
+        Glide.with(this)
+            .asGif()
+            .load("https://www.spc.noaa.gov/products/activity_loop.gif")
+            .skipMemoryCache(true)
+            .diskCacheStrategy(DiskCacheStrategy.NONE)
+            .into(binding.spcActivityLoop)
+    }
 
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -58,16 +74,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // Load the SPC activity loop GIF
-        Glide.with(this)
-            .asGif()
-            .load("https://www.spc.noaa.gov/products/activity_loop.gif")
-            .into(binding.spcActivityLoop)
+        // Initial load of the GIF
+        loadGif()
+        // Start periodic refresh
+        handler.post(refreshRunnable)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // Create channel to show notifications.
@@ -88,6 +103,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         askNotificationPermission()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Remove callbacks when activity is destroyed
+        handler.removeCallbacks(refreshRunnable)
     }
 
     private fun checkLocationPermission() {
@@ -120,25 +141,28 @@ class MainActivity : AppCompatActivity() {
             fusedLocationClient.lastLocation
                 .addOnSuccessListener { location: Location? ->
                     location?.let {
-                        getTokenAndSendData(location.latitude, location.longitude, {
-                            Toast.makeText(
-                                this@MainActivity,
-                                "Location and token sent successfully",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        { errorMessage ->
-                            Toast.makeText(
-                                this@MainActivity,
-                                errorMessage,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        SpcDbApi.getTokenAndSendData(
+                            context = this@MainActivity,
+                            lat = location.latitude,
+                            lon = location.longitude,
+                            onSuccess = {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Location and token sent successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            onError = { errorMessage ->
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    errorMessage,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         )
+                    } ?: run {
+                        Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show()
                     }
-                } ?: run {
-                    Toast.makeText(this, "Location not available", Toast.LENGTH_SHORT).show()
-                }
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Error getting location: ${e.message}", Toast.LENGTH_SHORT).show()

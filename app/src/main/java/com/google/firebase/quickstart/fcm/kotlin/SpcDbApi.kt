@@ -1,27 +1,24 @@
 package com.google.firebase.quickstart.fcm.kotlin
 
+import android.content.Context
 import android.util.Log
-import android.widget.Toast
-import retrofit2.http.Body
-import retrofit2.http.POST
+import com.google.firebase.Firebase
+import com.google.firebase.messaging.messaging
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.POST
+import java.util.UUID
 
 // Data classes for API
 data class AppData(
     val phone_id: String,
     val fcm_token: String,
-    val lat: Double,
-    val lon: Double
-)
-
-data class InputAppData(
-    val fcm_token: String,
-    val lat: Optional[Double],
-    val lon: Optional[Double]
+    val lat: Double?,
+    val lon: Double?
 )
 
 // API interface
@@ -41,8 +38,8 @@ object SpcDbApi {
     private val apiService = retrofit.create(ApiService::class.java)
 
     // Get or generate a unique device ID
-    private fun getDeviceUniqueId(): String {
-        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    private fun getDeviceUniqueId(context: Context): String {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val existingId = prefs.getString("device_id", null)
 
         return if (existingId != null) {
@@ -54,18 +51,18 @@ object SpcDbApi {
         }
     }
 
-    fun getTokenAndSendData(lat: Double, lon: Double, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun getTokenAndSendData(context: Context, lat: Double?, lon: Double?, onSuccess: () -> Unit, onError: (String) -> Unit) {
         // Get FCM token and send data
         Firebase.messaging.token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val token = task.result
-                val deviceId = getDeviceUniqueId()
+                val deviceId = getDeviceUniqueId(context)
 
                 val appData = AppData(
                     phone_id = deviceId,
                     fcm_token = token,
-                    lat = location.latitude,
-                    lon = location.longitude
+                    lat = lat,
+                    lon = lon
                 )
 
                 this.sendDataToApi(
@@ -76,6 +73,7 @@ object SpcDbApi {
             } else {
                 onError("Error getting FCM token")
             }
+        }
     }
 
     fun sendDataToApi(
