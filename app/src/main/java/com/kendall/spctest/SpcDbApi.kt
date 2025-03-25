@@ -1,10 +1,10 @@
-package com.google.firebase.quickstart.fcm.kotlin
+package com.kendall.spctest
 
 import android.content.Context
 import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.messaging.messaging
-import com.google.firebase.quickstart.fcm.BuildConfig
+import com.kendall.spctest.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Call
@@ -36,7 +36,7 @@ object SpcDbApi {
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
         val requestWithHeader = originalRequest.newBuilder()
-//            .header("Authorization", BuildConfig.SPC_DB_API_KEY)
+           .header("Authorization", BuildConfig.SPC_DB_API_KEY)
             .build()
         chain.proceed(requestWithHeader)
     }

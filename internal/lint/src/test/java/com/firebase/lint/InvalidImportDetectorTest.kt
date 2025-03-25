@@ -46,7 +46,7 @@ class InvalidImportDetectorTest {
                 javaPackage,
                 java(
                     """
-          package com.google.firebase.kotlin;
+          package com.google.firebase;
 
           import com.google.firebase.java.Hello;
 

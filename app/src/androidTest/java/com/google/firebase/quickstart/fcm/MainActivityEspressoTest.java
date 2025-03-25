@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.google.firebase.quickstart.fcm;
+package com.kendall.spctest;
 
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import android.view.View;
 
-import com.google.firebase.quickstart.fcm.java.MainActivity;
+import com.kendall.spctest.java.MainActivity;
 
 import org.junit.Rule;
 import org.junit.Test;

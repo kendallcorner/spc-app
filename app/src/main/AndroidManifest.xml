@@ -36,7 +36,7 @@
         <!--            android:exported="true">-->
         <!--        </activity>-->
 
-        <activity android:name=".kotlin.MainActivity" android:exported="true">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -44,7 +44,7 @@
         </activity>
 
         <service
-            android:name=".kotlin.MyFirebaseMessagingService"
+            android:name=".MyFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />

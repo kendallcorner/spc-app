@@ -1,4 +1,4 @@
-package com.google.firebase.quickstart.fcm.kotlin
+package com.kendall.spctest
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,7 +13,7 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.google.firebase.quickstart.fcm.R
+import com.kendall.spctest.R
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 

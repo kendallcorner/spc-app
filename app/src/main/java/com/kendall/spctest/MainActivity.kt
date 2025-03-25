@@ -1,4 +1,4 @@
-package com.google.firebase.quickstart.fcm.kotlin
+package com.kendall.spctest
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -16,8 +16,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.quickstart.fcm.R
-import com.google.firebase.quickstart.fcm.databinding.ActivityMainBinding
+import com.kendall.spctest.R
+import com.kendall.spctest.databinding.ActivityMainBinding
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 

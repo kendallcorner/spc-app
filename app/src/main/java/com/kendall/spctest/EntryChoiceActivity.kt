@@ -1,4 +1,4 @@
-package com.google.firebase.quickstart.fcm
+package com.kendall.spctest
 
 import android.content.Intent
 import com.firebase.example.internal.BaseEntryChoiceActivity
@@ -11,7 +11,7 @@ class EntryChoiceActivity : BaseEntryChoiceActivity() {
             Choice(
                 "Kotlin",
                 "Run the Firebase Cloud Messaging written in Kotlin.",
-                Intent(this, com.google.firebase.quickstart.fcm.kotlin.MainActivity::class.java),
+                Intent(this, com.kendall.spctest.MainActivity::class.java),
             ),
         )
     }

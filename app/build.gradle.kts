@@ -1,5 +1,5 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
-// import java.util.Properties
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -8,14 +8,14 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// // Read .env file
-// val envFile = rootProject.file(".env")
-// val envProperties = Properties()
-// if (envFile.exists()) {
-//     envFile.reader().use { reader ->
-//         envProperties.load(reader)
-//     }
-// }
+// Read .env file
+val envFile = rootProject.file(".env")
+val envProperties = Properties()
+if (envFile.exists()) {
+    envFile.reader().use { reader ->
+        envProperties.load(reader)
+    }
+}
 
 tasks {
     check.dependsOn("assembleDebugAndroidTest")
@@ -38,7 +38,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Add API key from .env file
-        // buildConfigField("String", "SPC_DB_API_KEY", "\"${envProperties.getProperty("SPC_DB_API_KEY", "")}\"")
+        buildConfigField("String", "SPC_DB_API_KEY", "\"${envProperties.getProperty("SPC_DB_API_KEY", "")}\"")
     }
 
     buildTypes {
@@ -48,15 +48,6 @@ android {
         }
     }
 
-    //     buildTypes {
-    //     release {
-    //         isMinifyEnabled = false
-    //         proguardFiles(
-    //             getDefaultProguardFile("proguard-android-optimize.txt"),
-    //             "proguard-rules.pro"
-    //         )
-    //     }
-    // }
     packaging {
         resources.excludes.add("LICENSE.txt")
     }
