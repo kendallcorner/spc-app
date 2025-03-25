@@ -4,6 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.messaging.messaging
+import com.google.firebase.quickstart.fcm.BuildConfig
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -29,9 +32,22 @@ interface ApiService {
 
 object SpcDbApi {
     private const val TAG = "SpcDbApi"
-    
+
+    private val authInterceptor = Interceptor { chain ->
+        val originalRequest = chain.request()
+        val requestWithHeader = originalRequest.newBuilder()
+//            .header("Authorization", BuildConfig.SPC_DB_API_KEY)
+            .build()
+        chain.proceed(requestWithHeader)
+    }
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(authInterceptor)
+        .build()
+
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://bmorlmhe80.execute-api.us-east-2.amazonaws.com")
+        .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
@@ -76,7 +92,7 @@ object SpcDbApi {
         }
     }
 
-    fun sendDataToApi(
+    private fun sendDataToApi(
         appData: AppData,
         onSuccess: () -> Unit,
         onError: (String) -> Unit

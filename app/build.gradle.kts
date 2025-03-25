@@ -1,28 +1,44 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
+// import java.util.Properties
 
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    // id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
 }
+
+// // Read .env file
+// val envFile = rootProject.file(".env")
+// val envProperties = Properties()
+// if (envFile.exists()) {
+//     envFile.reader().use { reader ->
+//         envProperties.load(reader)
+//     }
+// }
 
 tasks {
     check.dependsOn("assembleDebugAndroidTest")
 }
 
 android {
-    namespace = "com.google.firebase.quickstart.fcm"
+    // namespace = "com.google.firebase.quickstart.fcm"
+    namespace = "com.kendall.spctest"
     compileSdk = 35
 
     defaultConfig {
         applicationId = "com.kendall.spctest"
         minSdk = 21
+        // minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
         multiDexEnabled = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Add API key from .env file
+        // buildConfigField("String", "SPC_DB_API_KEY", "\"${envProperties.getProperty("SPC_DB_API_KEY", "")}\"")
     }
 
     buildTypes {
@@ -31,6 +47,16 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro")
         }
     }
+
+    //     buildTypes {
+    //     release {
+    //         isMinifyEnabled = false
+    //         proguardFiles(
+    //             getDefaultProguardFile("proguard-android-optimize.txt"),
+    //             "proguard-rules.pro"
+    //         )
+    //     }
+    // }
     packaging {
         resources.excludes.add("LICENSE.txt")
     }
@@ -44,6 +70,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
     lint {
         abortOnError = false
@@ -61,6 +88,8 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // Location services
     implementation("com.google.android.gms:play-services-location:21.2.0")
